@@ -54,4 +54,4 @@ Executable benchmark
     Buildable:     True
     Build-depends: base > 3 && < 5, smallhash
     ghc-options:   -Wall -O2
-    cc-options: -O2 -g
+    cc-options: -O2 -g -DNDEBUG
