@@ -9,17 +9,14 @@ struct int_to_a_node {
     void *stable_ptr;
 };
 
-union int_to_a__chunk_item {
-    struct list_node free_list_node;
-    struct int_to_a_node node;
-};
+typedef uint16_t int_to_a__free_bitmap;
 
-#define INT_TO_A__CHUNK_COUNT   16
+#define INT_TO_A__CHUNK_COUNT   (8*sizeof(int_to_a__free_bitmap))
+#define INT_TO_A__CHUNK_FULL_BITMAP ((1ULL << INT_TO_A__CHUNK_COUNT) - 1)
 struct int_to_a__chunk {
-    union int_to_a__chunk_item items[INT_TO_A__CHUNK_COUNT];
-    struct list_node free_list_head;
+    int_to_a__free_bitmap free_bitmap;
+    struct int_to_a_node nodes[INT_TO_A__CHUNK_COUNT];
     struct list_node usable_chunk_node;
-    uint8_t used_count;
 };
 
 bool int_to_a__match(void *user_arg, const void *key, small_hash__node *node)
@@ -49,13 +46,7 @@ void int_to_a__table__init_dynamic(
 static struct int_to_a__chunk *new_chunk(int_to_a__table *table)
 {
     struct int_to_a__chunk *new_chunk = malloc(sizeof *new_chunk);
-    new_chunk->used_count = 0;
-    list_node_init(&new_chunk->free_list_head);
-    unsigned i;
-    for(i = 0; i < ARRAY_LEN(new_chunk->items); i++) {
-        list_add_before(
-            &new_chunk->free_list_head, &new_chunk->items[i].free_list_node);
-    }
+    new_chunk->free_bitmap = INT_TO_A__CHUNK_FULL_BITMAP;
     list_add_after(&table->usable_chunk_list, &new_chunk->usable_chunk_node);
     return new_chunk;
 }
@@ -71,38 +62,27 @@ static struct int_to_a__chunk *get_usable_chunk(int_to_a__table *table)
 
 static struct int_to_a_node *malloc_from_chunk(struct int_to_a__chunk *chunk)
 {
-    assert(!list_empty(&chunk->free_list_head));
-    struct list_node *first_free = chunk->free_list_head.next;
-    list_del(first_free);
-    union int_to_a__chunk_item *item =
-        container_of(first_free, union int_to_a__chunk_item, free_list_node);
-    chunk->used_count++;
-    if(chunk->used_count == INT_TO_A__CHUNK_COUNT) {
+    assert(chunk->free_bitmap != 0);
+    unsigned first_free_index = __builtin_ctz(chunk->free_bitmap);
+    chunk->free_bitmap &= ~(1ULL << first_free_index);
+    if(chunk->free_bitmap == 0) {
         list_del(&chunk->usable_chunk_node);
     }
-    item->node.array_index = item - chunk->items;
-    return &item->node;
-}
-
-static void free_to_chunk(
-    int_to_a__table *table,
-    struct int_to_a__chunk *chunk, union int_to_a__chunk_item *item)
-{
-    list_add_after(&chunk->free_list_head, &item->free_list_node);
-    chunk->used_count++;
-    if(1 == chunk->used_count) {
-        list_add_before(&table->usable_chunk_list, &chunk->usable_chunk_node);
-    }
+    struct int_to_a_node *node = &chunk->nodes[first_free_index];
+    node->array_index = first_free_index;
+    return node;
 }
 
 static void free_int_to_a_node(int_to_a__table *table, struct int_to_a_node *node)
 {
-    union int_to_a__chunk_item *item =
-        container_of(node, union int_to_a__chunk_item, node);
-    union int_to_a__chunk_item *base_items = item - node->array_index;
+    struct int_to_a_node *base_nodes = node - node->array_index;
     struct int_to_a__chunk *chunk =
-        container_of(base_items, struct int_to_a__chunk, items);
-    free_to_chunk(table, chunk, item);
+        container_of(base_nodes, struct int_to_a__chunk, nodes);
+    assert(!(chunk->free_bitmap & (1ULL << node->array_index)));
+    if(0 == chunk->free_bitmap) {
+        list_add_before(&table->usable_chunk_list, &chunk->usable_chunk_node);
+    }
+    chunk->free_bitmap |= (1ULL << node->array_index);
 }
 
 static struct int_to_a_node *malloc_int_to_a_node(int_to_a__table *table)
