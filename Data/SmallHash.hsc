@@ -30,26 +30,26 @@ instance Storable C_IntToANode where
 
 newtype Table a = Table (ForeignPtr C_Table)
 
-foreign import ccall "int_to_a__table__init_dynamic"
+foreign import ccall unsafe "int_to_a__table__init_dynamic"
   c_int_to_a__table__init_dynamic :: Ptr C_Table -> Word -> IO ()
 
 -- void int_to_a__table__add(small_hash__table *, int key, void *stable_ptr);
-foreign import ccall "int_to_a__table__add"
+foreign import ccall unsafe "int_to_a__table__add"
   c_int_to_a__table__add :: Ptr C_Table -> CInt -> Ptr () -> IO ()
 
 -- void int_to_a__table__del(small_hash__table *, struct int_to_a_node *);
-foreign import ccall "int_to_a__table__del"
+foreign import ccall unsafe "int_to_a__table__del"
   c_int_to_a__table__del :: Ptr C_Table -> Ptr C_IntToANode -> IO ()
 
 -- struct int_to_a_node *int_to_a__table__find(small_hash__table *, int key);
-foreign import ccall "int_to_a__table__find"
+foreign import ccall unsafe "int_to_a__table__find"
   c_int_to_a__table__find :: Ptr C_Table -> CInt -> IO (Ptr C_IntToANode)
 
 -- void int_to_a__get_val(struct int_to_a_node *);
-foreign import ccall "int_to_a__get_val"
+foreign import ccall unsafe "int_to_a__get_val"
   c_int_to_a__get_val :: Ptr C_IntToANode -> Ptr ()
 
-foreign import ccall "&int_to_a__table__free"
+foreign import ccall unsafe "&int_to_a__table__free"
   c_int_to_a__table__free :: FunPtr (Ptr C_Table -> IO ())
 
 anchorsCount :: Word
