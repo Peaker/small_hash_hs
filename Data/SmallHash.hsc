@@ -9,7 +9,7 @@ import Foreign.StablePtr
 import Foreign.Storable
 import Foreign.Marshal.Alloc
 
-data C_Table
+data C_Table                    -- int_to_a__table
 data C_IntToANode
 
 #include "int_to_a.h"
@@ -17,31 +17,25 @@ data C_IntToANode
 #let alignment t = "%lu", (unsigned long)offsetof(struct {char x__; t (y__); }, y__)
 
 instance Storable C_Table where
-  sizeOf _    = #size small_hash__table
-  alignment _ = #alignment small_hash__table
+  sizeOf _    = #size int_to_a__table
+  alignment _ = #alignment int_to_a__table
   peek = error "Cannot peek inside table"
   poke = error "Cannot poke inside table"
-
-instance Storable C_IntToANode where
-  sizeOf _    = #size struct int_to_a_node
-  alignment _ = #alignment struct int_to_a_node
-  peek = error "Cannot peek inside int_to_a_node"
-  poke = error "Cannot poke inside int_to_a_node"
 
 newtype Table a = Table (ForeignPtr C_Table)
 
 foreign import ccall unsafe "int_to_a__table__init_dynamic"
   c_int_to_a__table__init_dynamic :: Ptr C_Table -> Word -> IO ()
 
--- void int_to_a__table__add(small_hash__table *, int key, void *stable_ptr);
+-- void int_to_a__table__add(int_to_a__table *, int key, void *stable_ptr);
 foreign import ccall unsafe "int_to_a__table__add"
   c_int_to_a__table__add :: Ptr C_Table -> CInt -> Ptr () -> IO ()
 
--- void int_to_a__table__del(small_hash__table *, struct int_to_a_node *);
+-- void int_to_a__table__del(int_to_a__table *, struct int_to_a_node *);
 foreign import ccall unsafe "int_to_a__table__del"
   c_int_to_a__table__del :: Ptr C_Table -> Ptr C_IntToANode -> IO ()
 
--- struct int_to_a_node *int_to_a__table__find(small_hash__table *, int key);
+-- struct int_to_a_node *int_to_a__table__find(int_to_a__table *, int key);
 foreign import ccall unsafe "int_to_a__table__find"
   c_int_to_a__table__find :: Ptr C_Table -> CInt -> IO (Ptr C_IntToANode)
 
