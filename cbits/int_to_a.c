@@ -6,7 +6,7 @@ struct int_to_a_node {
     uint8_t array_index;
     small_hash__node node;
     int key;
-    void *stable_ptr;
+    int val;
 };
 
 typedef uint16_t int_to_a__free_bitmap;
@@ -92,11 +92,11 @@ static struct int_to_a_node *malloc_int_to_a_node(int_to_a__table *table)
     return malloc_from_chunk(chunk);
 }
 
-void int_to_a__table__add(int_to_a__table *table, int key, void *stable_ptr)
+void int_to_a__table__add(int_to_a__table *table, int key, int val)
 {
     struct int_to_a_node *i2a_node = malloc_int_to_a_node(table);
     i2a_node->key = key;
-    i2a_node->stable_ptr = stable_ptr;
+    i2a_node->val = val;
     small_hash__table__add(&table->table, key, &i2a_node->node);
 }
 
@@ -114,4 +114,4 @@ struct int_to_a_node *int_to_a__table__find(int_to_a__table *table, int key)
     return container_of(node, struct int_to_a_node, node);
 }
 
-void *int_to_a__get_val(struct int_to_a_node *node) { return node->stable_ptr; }
+int int_to_a__get_val(struct int_to_a_node *node) { return node->val; }
