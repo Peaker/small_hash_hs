@@ -10,9 +10,10 @@ struct int_to_a_node {
 };
 
 typedef uint16_t int_to_a__free_bitmap;
+#define int_to_a__free_bitmap_ctz  __builtin_ctz
 
 #define INT_TO_A__CHUNK_COUNT   (8*sizeof(int_to_a__free_bitmap))
-#define INT_TO_A__CHUNK_FULL_BITMAP ((1ULL << INT_TO_A__CHUNK_COUNT) - 1)
+#define INT_TO_A__CHUNK_FULL_BITMAP ((int_to_a__free_bitmap)~0)
 struct int_to_a__chunk {
     int_to_a__free_bitmap free_bitmap;
     struct int_to_a_node nodes[INT_TO_A__CHUNK_COUNT];
@@ -63,7 +64,7 @@ static struct int_to_a__chunk *get_usable_chunk(int_to_a__table *table)
 static struct int_to_a_node *malloc_from_chunk(struct int_to_a__chunk *chunk)
 {
     assert(chunk->free_bitmap != 0);
-    unsigned first_free_index = __builtin_ctz(chunk->free_bitmap);
+    unsigned first_free_index = int_to_a__free_bitmap_ctz(chunk->free_bitmap);
     chunk->free_bitmap &= ~(1ULL << first_free_index);
     if(chunk->free_bitmap == 0) {
         list_del(&chunk->usable_chunk_node);
