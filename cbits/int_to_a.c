@@ -37,6 +37,13 @@ static struct small_hash__funcs int_to_a__funcs = SMALL_HASH__FUNCS(int_to_a__);
 
 void int_to_a__table__free(int_to_a__table *table)
 {
+    small_hash__iter i;
+    small_hash__node *node;
+    SMALL_HASH__ITER(table->table, i, node) {
+        struct int_to_a_node *i2a_node =
+            container_of(node, struct int_to_a_node, node);
+        hs_free_stable_ptr(i2a_node->stable_ptr);
+    }
     /* TODO: Iterate all nodes and free them... */
     small_hash__table__free(&table->table);
 }
