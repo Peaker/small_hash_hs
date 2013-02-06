@@ -35,17 +35,29 @@ static bool int_to_a__match(void *user_arg, const void *key, small_hash__node *n
 
 static struct small_hash__funcs int_to_a__funcs = SMALL_HASH__FUNCS(int_to_a__);
 
+#include "get_time_micros.h"
+#include <inttypes.h>
+
 void int_to_a__table__free(int_to_a__table *table)
 {
+    uint64_t before = get_time_micros();
+    hs_lock_stable_tables();
     small_hash__iter i;
     small_hash__node *node;
     SMALL_HASH__ITER(table->table, i, node) {
         struct int_to_a_node *i2a_node =
             container_of(node, struct int_to_a_node, node);
-        hs_free_stable_ptr(i2a_node->stable_ptr);
+        hs_free_stable_ptr_unsafe(i2a_node->stable_ptr);
     }
+    hs_unlock_stable_tables();
+    uint64_t mid = get_time_micros();
     /* TODO: Iterate all nodes and free them... */
     small_hash__table__free(&table->table);
+    uint64_t after = get_time_micros();
+
+    printf("Iter/free-stable-ptr: %"PRIu64
+           " micros. Free small hash table: %"PRIu64" micros.\n",
+           mid-before, after-mid);
 }
 
 void int_to_a__table__init_dynamic(

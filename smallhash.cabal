@@ -52,6 +52,6 @@ Executable benchmark
     Buildable:     False
   else
     Buildable:     True
-    Build-depends: base > 3 && < 5, smallhash
+    Build-depends: base > 3 && < 5, smallhash, time
     ghc-options:   -Wall -O2
     cc-options: -O2 -g -DNDEBUG
