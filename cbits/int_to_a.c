@@ -107,6 +107,10 @@ static void free_int_to_a_node(int_to_a__table *table, struct int_to_a_node *nod
         list_add_before(&table->usable_chunk_list, &chunk->usable_chunk_node);
     }
     chunk->free_bitmap |= (1ULL << node->array_index);
+    if(chunk->free_bitmap == INT_TO_A__CHUNK_FULL_BITMAP) {
+        list_del(&chunk->usable_chunk_node);
+        free(chunk);
+    }
 }
 
 static struct int_to_a_node *malloc_int_to_a_node(int_to_a__table *table)
