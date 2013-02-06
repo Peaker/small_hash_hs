@@ -1,6 +1,7 @@
 #include "int_to_a.h"
 #include <stdlib.h>             /* malloc */
 #include <assert.h>
+#include <Rts.h>
 
 struct int_to_a_node {
     uint8_t array_index;
@@ -107,6 +108,7 @@ void int_to_a__table__add(int_to_a__table *table, int key, void *stable_ptr)
 
 void int_to_a__table__del(int_to_a__table *table, struct int_to_a_node *i2a_node)
 {
+    hs_free_stable_ptr(i2a_node->stable_ptr);
     small_hash__table__del(&table->table, i2a_node->key, &i2a_node->node);
     free_int_to_a_node(table, i2a_node);
 }

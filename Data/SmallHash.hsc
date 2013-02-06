@@ -29,7 +29,7 @@ foreign import ccall unsafe "int_to_a__table__init_dynamic"
 
 -- void int_to_a__table__add(int_to_a__table *, int key, void *stable_ptr);
 foreign import ccall unsafe "int_to_a__table__add"
-  c_int_to_a__table__add :: Ptr C_Table -> CInt -> Ptr () -> IO ()
+  c_int_to_a__table__add :: Ptr C_Table -> CInt -> StablePtr a -> IO ()
 
 -- void int_to_a__table__del(int_to_a__table *, struct int_to_a_node *);
 foreign import ccall unsafe "int_to_a__table__del"
@@ -41,7 +41,7 @@ foreign import ccall unsafe "int_to_a__table__find"
 
 -- void int_to_a__get_val(struct int_to_a_node *);
 foreign import ccall unsafe "int_to_a__get_val"
-  c_int_to_a__get_val :: Ptr C_IntToANode -> Ptr ()
+  c_int_to_a__get_val :: Ptr C_IntToANode -> StablePtr a
 
 foreign import ccall unsafe "&int_to_a__table__free"
   c_int_to_a__table__free :: FunPtr (Ptr C_Table -> IO ())
@@ -61,7 +61,7 @@ insert :: Table a -> Int -> a -> IO ()
 insert (Table table) key val =
   withForeignPtr table $ \tablePtr -> do
     stablePtr <- newStablePtr val
-    c_int_to_a__table__add tablePtr (fromIntegral key) (castStablePtrToPtr stablePtr)
+    c_int_to_a__table__add tablePtr (fromIntegral key) stablePtr
 
 findInternal :: IO b -> (Ptr C_Table -> Ptr C_IntToANode -> IO b) -> Table a -> Int -> IO b
 findInternal notFound found (Table table) key =
@@ -73,10 +73,8 @@ findInternal notFound found (Table table) key =
 
 find :: Table a -> Int -> IO (Maybe a)
 find = findInternal (return Nothing) $ \_ intToAPtr ->
-  fmap (Just $!) . deRefStablePtr . castPtrToStablePtr $
-  c_int_to_a__get_val intToAPtr
+  fmap (Just $!) . deRefStablePtr $ c_int_to_a__get_val intToAPtr
 
 delete :: Table a -> Int -> IO ()
-delete = findInternal (return ()) $ \tablePtr intToAPtr -> do
-  freeStablePtr . castPtrToStablePtr $ c_int_to_a__get_val intToAPtr
+delete = findInternal (return ()) $ \tablePtr intToAPtr ->
   c_int_to_a__table__del tablePtr intToAPtr
