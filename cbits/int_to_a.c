@@ -20,7 +20,12 @@ struct int_to_a__chunk {
     struct list_node usable_chunk_node;
 };
 
-bool int_to_a__match(void *user_arg, const void *key, small_hash__node *node)
+static small_hash__hash int_to_a__get_hash(void *user_arg, small_hash__node *node)
+{
+    return container_of(node, struct int_to_a_node, node)->key;
+}
+
+static bool int_to_a__match(void *user_arg, const void *key, small_hash__node *node)
 {
     struct int_to_a_node *int_to_a =
         container_of(node, struct int_to_a_node, node);
