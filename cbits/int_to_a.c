@@ -42,17 +42,17 @@ static void destroy_int_to_a(void *dummy, small_hash__node *node)
 {
     struct int_to_a_node *i2a_node =
         container_of(node, struct int_to_a_node, node);
-    hs_free_stable_ptr_unsafe(i2a_node->stable_ptr);
+    hs_free_stable_ptr/* _unsafe */(i2a_node->stable_ptr);
 }
 
 void int_to_a__table__free(int_to_a__table *table)
 {
     uint64_t before = get_time_micros();
-    hs_lock_stable_tables();
+    /* hs_lock_stable_tables(); */
 
     small_hash__table__fini_destroy(&table->table, destroy_int_to_a, NULL);
 
-    hs_unlock_stable_tables();
+    /* hs_unlock_stable_tables(); */
     uint64_t after = get_time_micros();
 
     printf("Free small hash table: %"PRIu64" micros.\n", after-before);
